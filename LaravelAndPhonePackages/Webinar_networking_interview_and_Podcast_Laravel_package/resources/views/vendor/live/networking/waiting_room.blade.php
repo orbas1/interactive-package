@@ -1,58 +1,53 @@
 @extends('layouts.app')
 
-@section('title', 'Networking Waiting Room')
-
 @section('content')
-<div class="container py-4" id="networking-waiting-room" data-live-url="{{ route('wnip.networking.live', ['session' => $session['id'] ?? 1]) ?? '#' }}">
-    @include('vendor.live.components.waiting_room_header', [
-        'title' => $session['title'] ?? 'Networking session',
-        'host' => $session['host'] ?? 'Host',
-        'start' => $session['schedule'] ?? 'Starts soon',
-        'status' => 'Waiting'
-    ])
+<div class="container py-4">
+    <h1 class="mb-1">Networking Waiting Room</h1>
+    <p class="text-muted">{{ $session->title }} • {{ $session->starts_at?->toDayDateTimeString() }}</p>
 
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="card mb-3">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div>
-                            <div class="text-muted">Starts in</div>
-                            <div id="networking-countdown" class="display-5">--:--:--</div>
-                        </div>
-                        <div class="text-end">
-                            <div class="badge bg-secondary">Participants</div>
-                            <div class="small" id="participant-count">0 waiting</div>
-                        </div>
-                    </div>
-                    <ul class="list-group mb-3" id="participant-list">
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <span>Jane • Product Lead (London)</span>
-                            <span class="badge bg-light text-dark">Fintech</span>
-                        </li>
-                    </ul>
-                    <button class="btn btn-primary w-100" id="join-networking" disabled>Join Session</button>
-                </div>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="fw-semibold">Countdown</div>
+                <span class="badge bg-secondary session-state">{{ ucfirst($session->status) }}</span>
             </div>
-        </div>
-        <div class="col-lg-4">
-            <div class="card mb-3">
-                <div class="card-body">
-                    <h6>Business card</h6>
-                    <form class="d-grid gap-2" id="waiting-card-form">
-                        <input class="form-control" name="headline" placeholder="Headline" />
-                        <input class="form-control" name="city" placeholder="City" />
-                        <textarea class="form-control" name="links" rows="2" placeholder="Links"></textarea>
-                        <button class="btn btn-outline-primary" type="submit">Save Card</button>
-                    </form>
+            <div class="display-6" id="networking-countdown" data-start="{{ $session->starts_at?->toIso8601String() }}">--:--</div>
+            <p class="text-muted">Finalise your intro card while we prepare your first rotation.</p>
+            <form class="mt-3">
+                <div class="row g-2">
+                    <div class="col-md-6"><input class="form-control" placeholder="Headline" /></div>
+                    <div class="col-md-6"><input class="form-control" placeholder="Bio / Links" /></div>
                 </div>
-            </div>
-            @include('vendor.live.components.notes_sidebar')
+            </form>
+            <a id="enter-networking" href="{{ route('wnip.networking.live', $session) }}" class="btn btn-primary mt-3" {{ $session->status === 'in_rotation' ? '' : 'disabled' }}>Join Session</a>
         </div>
     </div>
 </div>
 @endsection
 
 @push('scripts')
-<script type="module" src="{{ mix('js/live/networkingCatalogue.js') }}"></script>
+<script>
+    const countdown = document.getElementById('networking-countdown');
+    if (countdown) {
+        const start = new Date(countdown.dataset.start);
+        const state = document.querySelector('.session-state');
+        const join = document.getElementById('enter-networking');
+        const tick = () => {
+            const now = new Date();
+            const diff = start - now;
+            if (diff <= 0) {
+                countdown.textContent = '00:00';
+                state.textContent = 'Live';
+                state.classList.replace('bg-secondary', 'bg-success');
+                join?.removeAttribute('disabled');
+                return;
+            }
+            const minutes = Math.floor(diff / 1000 / 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+            countdown.textContent = `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+        };
+        tick();
+        setInterval(tick, 1000);
+    }
+</script>
 @endpush

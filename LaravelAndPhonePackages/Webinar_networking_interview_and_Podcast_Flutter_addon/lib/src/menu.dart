@@ -54,8 +54,13 @@ Map<String, WidgetBuilder> buildAddonRoutes(WnipApiClient apiClient) {
       return WebinarDetailScreen(service: webinarService, webinarId: id);
     },
     '/live/webinars/waiting/:id': (context) {
-      final title = ModalRoute.of(context)?.settings.arguments as String? ?? 'Webinar';
-      return WebinarWaitingRoomScreen(webinarTitle: title);
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      return WebinarWaitingRoomScreen(
+        webinarTitle: args?['title'] as String? ?? 'Webinar',
+        startsAt: args?['startsAt'] as DateTime? ?? DateTime.now(),
+        waitingRoomMessage: args?['message'] as String?,
+        isLive: args?['isLive'] as bool? ?? false,
+      );
     },
     '/live/webinars/live': (_) => const WebinarLiveScreen(title: 'Webinar Live'),
     '/live/webinars/recording/:id': (context) {
@@ -68,8 +73,12 @@ Map<String, WidgetBuilder> buildAddonRoutes(WnipApiClient apiClient) {
       return NetworkingSessionDetailScreen(service: networkingService, sessionId: id);
     },
     '/live/networking/waiting/:id': (context) {
-      final title = ModalRoute.of(context)?.settings.arguments as String? ?? 'Networking Session';
-      return NetworkingWaitingRoomScreen(sessionTitle: title);
+      final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+      return NetworkingWaitingRoomScreen(
+        sessionTitle: args?['title'] as String? ?? 'Networking Session',
+        startsAt: args?['startsAt'] as DateTime? ?? DateTime.now(),
+        isLive: args?['isLive'] as bool? ?? false,
+      );
     },
     '/live/networking/live': (_) => const NetworkingLiveScreen(),
     '/live/podcasts': (_) => PodcastCatalogueScreen(service: podcastService),

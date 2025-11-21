@@ -3,24 +3,35 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class NetworkingWaitingRoomScreen extends StatefulWidget {
-  const NetworkingWaitingRoomScreen({super.key, required this.sessionTitle});
+  const NetworkingWaitingRoomScreen({
+    super.key,
+    required this.sessionTitle,
+    required this.startsAt,
+    this.isLive = false,
+  });
 
   final String sessionTitle;
+  final DateTime startsAt;
+  final bool isLive;
 
   @override
   State<NetworkingWaitingRoomScreen> createState() => _NetworkingWaitingRoomScreenState();
 }
 
 class _NetworkingWaitingRoomScreenState extends State<NetworkingWaitingRoomScreen> {
-  Duration remaining = const Duration(minutes: 3);
+  late Duration remaining;
   late Timer _timer;
+  bool live = false;
 
   @override
   void initState() {
     super.initState();
+    live = widget.isLive;
+    remaining = widget.startsAt.difference(DateTime.now());
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
-        remaining -= const Duration(seconds: 1);
+        remaining = widget.startsAt.difference(DateTime.now());
+        if (remaining.inSeconds <= 0) live = true;
       });
     });
   }
@@ -33,7 +44,9 @@ class _NetworkingWaitingRoomScreenState extends State<NetworkingWaitingRoomScree
 
   @override
   Widget build(BuildContext context) {
-    final countdown = '${remaining.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}';
+    final countdown = remaining.inSeconds < 0
+        ? '00:00'
+        : '${remaining.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}';
     return Scaffold(
       appBar: AppBar(title: const Text('Waiting Room')),
       body: Padding(
@@ -58,7 +71,7 @@ class _NetworkingWaitingRoomScreenState extends State<NetworkingWaitingRoomScree
             ),
             const SizedBox(height: 16),
             ElevatedButton(
-              onPressed: remaining.isNegative ? () => Navigator.pushNamed(context, '/live/networking/live') : null,
+              onPressed: live ? () => Navigator.pushNamed(context, '/live/networking/live') : null,
               child: const Text('Join Session'),
             )
           ],

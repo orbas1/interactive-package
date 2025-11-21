@@ -1,41 +1,44 @@
 @extends('layouts.app')
 
-@section('title', 'Interview Waiting Room')
-
 @section('content')
-<div class="container py-4" id="interview-waiting-room" data-live-url="{{ route('wnip.interviews.live', ['interview' => $interview['id'] ?? 1]) ?? '#' }}">
-    @include('vendor.live.components.waiting_room_header', [
-        'title' => $interview['role'] ?? 'Interview',
-        'host' => $interview['company'] ?? 'Company',
-        'start' => $interview['datetime'] ?? 'Starts soon',
-        'status' => 'Waiting'
-    ])
+<div class="container py-4">
+    <h1 class="mb-1">Interview Waiting Room</h1>
+    <p class="text-muted">{{ $interview->title }} • {{ $interview->scheduled_at?->toDayDateTimeString() }}</p>
 
-    <div class="row g-4">
-        <div class="col-lg-8">
-            <div class="card">
-                <div class="card-body">
-                    <div class="text-muted">Starts in</div>
-                    <div id="interview-countdown" class="display-5">--:--:--</div>
-                    <div class="mt-3">
-                        <h6>Tips</h6>
-                        <ul class="mb-0">
-                            <li>Find a quiet space.</li>
-                            <li>Test your audio and camera.</li>
-                            <li>Keep notes handy.</li>
-                        </ul>
-                    </div>
-                    <button class="btn btn-primary w-100 mt-3" id="enter-interview" disabled>Enter Interview</button>
-                </div>
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <div class="fw-semibold">Host</div>
+                <span class="badge bg-secondary">{{ optional($interview->host)->name ?? 'Host' }}</span>
             </div>
-        </div>
-        <div class="col-lg-4">
-            @include('vendor.live.components.notes_sidebar')
+            <div class="display-6 mb-3" id="interview-countdown" data-start="{{ $interview->scheduled_at?->toIso8601String() }}">--:--</div>
+            <p class="text-muted">Keep this page open; we will take you to the live interview when it starts.</p>
+            <a id="enter-interview" class="btn btn-primary" href="{{ route('wnip.interviews.show', $interview) }}" disabled>Enter Interview</a>
         </div>
     </div>
 </div>
 @endsection
 
 @push('scripts')
-<script type="module" src="{{ mix('js/live/interviewDashboard.js') }}"></script>
+<script>
+    const interviewCountdown = document.getElementById('interview-countdown');
+    if (interviewCountdown) {
+        const start = new Date(interviewCountdown.dataset.start);
+        const enterBtn = document.getElementById('enter-interview');
+        const tick = () => {
+            const now = new Date();
+            const diff = start - now;
+            if (diff <= 0) {
+                interviewCountdown.textContent = '00:00';
+                enterBtn?.removeAttribute('disabled');
+                return;
+            }
+            const minutes = Math.floor(diff / 1000 / 60);
+            const seconds = Math.floor((diff / 1000) % 60);
+            interviewCountdown.textContent = `${String(minutes).padStart(2,'0')}:${String(seconds).padStart(2,'0')}`;
+        };
+        tick();
+        setInterval(tick, 1000);
+    }
+</script>
 @endpush
