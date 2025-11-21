@@ -3,9 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 class WebinarWaitingRoomScreen extends StatefulWidget {
-  const WebinarWaitingRoomScreen({super.key, required this.webinarTitle});
+  const WebinarWaitingRoomScreen({
+    super.key,
+    required this.webinarTitle,
+    required this.startsAt,
+    this.waitingRoomMessage,
+    this.isLive = false,
+  });
 
   final String webinarTitle;
+  final DateTime startsAt;
+  final String? waitingRoomMessage;
+  final bool isLive;
 
   @override
   State<WebinarWaitingRoomScreen> createState() => _WebinarWaitingRoomScreenState();
@@ -13,15 +22,17 @@ class WebinarWaitingRoomScreen extends StatefulWidget {
 
 class _WebinarWaitingRoomScreenState extends State<WebinarWaitingRoomScreen> {
   late Timer _timer;
-  Duration remaining = const Duration(minutes: 5);
+  late Duration remaining;
   bool live = false;
 
   @override
   void initState() {
     super.initState();
+    live = widget.isLive;
+    remaining = widget.startsAt.difference(DateTime.now());
     _timer = Timer.periodic(const Duration(seconds: 1), (_) {
       setState(() {
-        remaining = remaining - const Duration(seconds: 1);
+        remaining = widget.startsAt.difference(DateTime.now());
         if (remaining.inSeconds <= 0) live = true;
       });
     });
@@ -35,7 +46,9 @@ class _WebinarWaitingRoomScreenState extends State<WebinarWaitingRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final time = remaining.inSeconds < 0 ? '00:00' : '${remaining.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}';
+    final time = remaining.inSeconds < 0
+        ? '00:00'
+        : '${remaining.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(remaining.inSeconds % 60).toString().padLeft(2, '0')}';
     return Scaffold(
       appBar: AppBar(title: const Text('Waiting Room')),
       body: Padding(
@@ -53,7 +66,7 @@ class _WebinarWaitingRoomScreenState extends State<WebinarWaitingRoomScreen> {
                   Text(time, style: Theme.of(context).textTheme.displaySmall),
                   const SizedBox(height: 12),
                   const Text('Announcements'),
-                  const Text('Host will update here before going live.'),
+                  Text(widget.waitingRoomMessage ?? 'Host will update here before going live.'),
                 ]),
               ),
             ),

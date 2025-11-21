@@ -16,7 +16,7 @@ class WebinarPodcastNetworkingInterviewServiceProvider extends ServiceProvider
     {
         $this->loadMigrationsFrom(__DIR__ . '/../../database/migrations');
         $this->loadTranslationsFrom(__DIR__ . '/../../resources/lang', 'wnip');
-        $this->loadViewsFrom(__DIR__ . '/../../resources/views', 'wnip');
+        $this->loadViewsFrom(__DIR__ . '/../../resources/views/vendor/live', 'wnip');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/web.php');
         $this->loadRoutesFrom(__DIR__ . '/../../routes/api.php');
 
@@ -25,7 +25,7 @@ class WebinarPodcastNetworkingInterviewServiceProvider extends ServiceProvider
         ], 'wnip-config');
 
         $this->publishes([
-            __DIR__ . '/../../resources/views' => resource_path('views/vendor/wnip'),
+            __DIR__ . '/../../resources/views/vendor/live' => resource_path('views/vendor/wnip'),
         ], 'wnip-views');
 
         $this->publishes([

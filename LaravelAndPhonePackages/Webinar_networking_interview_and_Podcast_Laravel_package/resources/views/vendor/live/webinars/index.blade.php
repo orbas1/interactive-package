@@ -1,91 +1,97 @@
 @extends('layouts.app')
 
-@section('title', 'Webinars')
-
-@section('breadcrumbs')
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/">Home</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Webinars</li>
-    </ol>
-</nav>
-@endsection
-
 @section('content')
-<div class="container py-4" id="webinar-catalogue" data-fetch-url="{{ route('wnip.webinars.index') ?? '#' }}">
-    <div class="d-flex align-items-center mb-4 flex-wrap gap-3">
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
         <div>
             <h1 class="mb-1">Webinars</h1>
-            <div class="text-muted">Discover upcoming & past sessions</div>
+            <p class="text-muted mb-0">Discover live, upcoming, and recorded webinars.</p>
         </div>
-        <div class="ms-auto d-flex gap-2 align-items-center">
-            <div class="btn-group" role="group" aria-label="Filters">
-                <button class="btn btn-outline-primary active" data-filter="upcoming">Upcoming</button>
-                <button class="btn btn-outline-primary" data-filter="past">Past</button>
-                <button class="btn btn-outline-primary" data-filter="mine">My Webinars</button>
-            </div>
-            <a class="btn btn-primary" href="{{ route('wnip.webinars.create') ?? '#' }}">Host a Webinar</a>
-        </div>
+        <a class="btn btn-primary" href="{{ route('wnip.webinars.index', ['upcoming' => 1]) }}">Host a Webinar</a>
     </div>
 
-    <div class="card mb-4">
-        <div class="card-body row g-3 align-items-end">
-            <div class="col-md-3">
-                <label class="form-label">Search</label>
-                <input type="search" class="form-control" placeholder="Title or host" name="search">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Category</label>
-                <select class="form-select" name="category">
-                    <option value="">All</option>
-                    <option>Engineering</option>
-                    <option>Marketing</option>
-                    <option>Product</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Date range</label>
-                <input type="date" class="form-control" name="from">
-            </div>
-            <div class="col-md-3">
-                <label class="form-label">Price</label>
-                <select class="form-select" name="price">
-                    <option value="">All</option>
-                    <option value="free">Free</option>
-                    <option value="paid">Paid</option>
-                </select>
-            </div>
-        </div>
-    </div>
-
-    @php
-        $webinars = $webinars ?? [
-            ['title' => 'Designing with AI', 'host' => 'Alice', 'datetime' => 'May 5, 6pm', 'tag' => 'Free', 'status' => 'Live'],
-            ['title' => 'Scaling APIs', 'host' => 'Bob', 'datetime' => 'May 8, 3pm', 'tag' => 'Paid', 'status' => 'Scheduled'],
-            ['title' => 'Mobile UX', 'host' => 'Carol', 'datetime' => 'Apr 20, 2pm', 'tag' => 'Free', 'status' => 'Finished'],
-        ];
-    @endphp
-
-    <div class="row g-3" id="webinar-cards">
-        @foreach($webinars as $webinar)
+    <form method="get" class="card mb-3 shadow-sm p-3">
+        <div class="row g-2 align-items-end">
             <div class="col-md-4">
-                @include('vendor.live.components.event_card', [
-                    'title' => $webinar['title'],
-                    'host' => $webinar['host'],
-                    'datetime' => $webinar['datetime'],
-                    'tag' => $webinar['tag'],
-                    'status' => $webinar['status'],
-                    'href' => route('wnip.webinars.show', ['webinar' => $loop->index + 1]) ?? '#'
-                ])
+                <label class="form-label">Search</label>
+                <input type="text" name="q" class="form-control" value="{{ $filters['q'] ?? '' }}" placeholder="Title or description">
             </div>
-        @endforeach
+            <div class="col-md-2">
+                <label class="form-label">Upcoming</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="upcoming" value="1" @checked($filters['upcoming'] ?? false)>
+                    <label class="form-check-label">Only upcoming</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Past</label>
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="past" value="1" @checked($filters['past'] ?? false)>
+                    <label class="form-check-label">Past sessions</label>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Pricing</label>
+                <select class="form-select" name="paid">
+                    <option value="">Any</option>
+                    <option value="0" @selected(($filters['paid'] ?? '')==='0')>Free</option>
+                    <option value="1" @selected(($filters['paid'] ?? '')==='1')>Paid</option>
+                </select>
+            </div>
+            <div class="col-md-2 text-end">
+                <button class="btn btn-outline-secondary" type="submit">Apply</button>
+            </div>
+        </div>
+    </form>
+
+    <div class="row g-3">
+        @forelse($webinars as $webinar)
+            <div class="col-md-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <div class="badge bg-{{ $webinar->is_live ? 'danger' : 'secondary' }} mb-1">{{ $webinar->is_live ? 'Live' : ucfirst($webinar->status) }}</div>
+                                <h5 class="card-title">{{ $webinar->title }}</h5>
+                                <p class="card-subtitle text-muted">{{ optional($webinar->host)->name ?? 'Host' }}</p>
+                            </div>
+                            <span class="badge bg-light text-dark">{{ $webinar->is_paid ? 'Paid' : 'Free' }}</span>
+                        </div>
+                        <p class="text-muted small flex-grow-1">{{ \Illuminate\Support\Str::limit($webinar->description, 120) }}</p>
+                        <div class="small text-muted mb-2">{{ optional($webinar->starts_at)->toDayDateTimeString() }}</div>
+                        <a class="btn btn-outline-primary w-100" href="{{ route('wnip.webinars.show', $webinar) }}">View Details</a>
+                    </div>
+                </div>
+            </div>
+        @empty
+            <div class="col-12">
+                <div class="alert alert-info">No webinars found.</div>
+            </div>
+        @endforelse
     </div>
-    <div class="mt-4 text-center" id="webinar-pagination">
-        <button class="btn btn-outline-secondary">Load more</button>
+
+    <div class="mt-3">
+        {{ $webinars->links() }}
     </div>
 </div>
 @endsection
 
 @push('scripts')
-<script type="module" src="{{ mix('js/live/webinarCatalogue.js') }}"></script>
+<script>
+    document.querySelectorAll('[data-live-at]').forEach(function(el) {
+        const startsAt = new Date(el.dataset.liveAt);
+        const badge = el.querySelector('.live-badge');
+        if (!badge) return;
+        const tick = () => {
+            const now = new Date();
+            if (now >= startsAt) {
+                badge.textContent = 'Live now';
+                badge.classList.remove('bg-secondary');
+                badge.classList.add('bg-danger');
+            }
+        };
+        tick();
+        setInterval(tick, 15000);
+    });
+</script>
 @endpush

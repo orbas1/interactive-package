@@ -78,11 +78,23 @@ class _WebinarDetailScreenState extends State<WebinarDetailScreen> {
                       padding: const EdgeInsets.all(16),
                       child: ElevatedButton(
                         onPressed: () async {
-                          await _state.registerForWebinar(widget.webinarId);
-                          if (mounted) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(const SnackBar(content: Text('Registered. Join waiting room when ready.')));
+                          if (_state.registration == null) {
+                            await _state.registerForWebinar(widget.webinarId);
                           }
+                          final data = _state.selected.data;
+                          if (!mounted || data == null) return;
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(const SnackBar(content: Text('Registered. Waiting room is ready.')));
+                          Navigator.pushNamed(
+                            context,
+                            '/live/webinars/waiting/${widget.webinarId}',
+                            arguments: {
+                              'title': data.title,
+                              'startsAt': data.startsAt,
+                              'message': data.waitingRoomMessage,
+                              'isLive': data.isLive,
+                            },
+                          );
                         },
                         child: Text(_state.registration == null ? 'Register' : 'Join Waiting Room'),
                       ),

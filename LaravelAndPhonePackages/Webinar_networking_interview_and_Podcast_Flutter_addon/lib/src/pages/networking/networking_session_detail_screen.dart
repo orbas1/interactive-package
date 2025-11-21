@@ -92,7 +92,15 @@ class _NetworkingSessionDetailScreenState extends State<NetworkingSessionDetailS
           : Padding(
               padding: const EdgeInsets.all(12),
               child: ElevatedButton(
-                onPressed: () => Navigator.pushNamed(context, '/live/networking/waiting/${session.id}', arguments: session.id),
+                onPressed: () => Navigator.pushNamed(
+                  context,
+                  '/live/networking/waiting/${session.id}',
+                  arguments: {
+                    'title': session.title,
+                    'startsAt': session.startsAt,
+                    'isLive': session.status == 'in_rotation',
+                  },
+                ),
                 child: const Text('Join Waiting Room'),
               ),
             ),

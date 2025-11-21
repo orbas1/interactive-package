@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\NetworkingParticipant;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\NetworkingSession;
+use Jobi\WebinarNetworkingInterviewPodcast\Support\Analytics\Analytics;
 
 class NetworkingController extends Controller
 {
@@ -15,7 +16,7 @@ class NetworkingController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json(NetworkingSession::query()->with('participants')->paginate());
+        return response()->json(NetworkingSession::query()->with(['participants', 'host'])->paginate());
     }
 
     public function store(Request $request): JsonResponse
@@ -38,13 +39,15 @@ class NetworkingController extends Controller
             'status' => 'scheduled',
         ]));
 
+        Analytics::track('networking_session_created', ['session_id' => $session->id, 'host_id' => $session->host_id]);
+
         return response()->json($session, 201);
     }
 
     public function show(NetworkingSession $networkingSession): JsonResponse
     {
         $this->authorize('view', $networkingSession);
-        return response()->json($networkingSession->load('participants'));
+        return response()->json($networkingSession->load(['participants', 'host']));
     }
 
     public function update(Request $request, NetworkingSession $networkingSession): JsonResponse
@@ -81,6 +84,11 @@ class NetworkingController extends Controller
             'joined_at' => now(),
         ]);
 
+        Analytics::track('networking_session_joined', [
+            'session_id' => $networkingSession->id,
+            'user_id' => $request->user()->getAuthIdentifier(),
+        ]);
+
         return response()->json($participant, 201);
     }
 
@@ -100,6 +108,8 @@ class NetworkingController extends Controller
         }
 
         $networkingSession->update(['status' => 'in_rotation']);
+
+        Analytics::track('networking_rotation_completed', ['session_id' => $networkingSession->id, 'count' => $total]);
 
         return response()->json(['message' => 'Rotation updated']);
     }

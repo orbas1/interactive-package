@@ -9,6 +9,7 @@ use Illuminate\Routing\Controller;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\Ticket;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\Webinar;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\WebinarRegistration;
+use Jobi\WebinarNetworkingInterviewPodcast\Support\Analytics\Analytics;
 
 class WebinarController extends Controller
 {
@@ -16,7 +17,7 @@ class WebinarController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $query = Webinar::query()->with('host');
+        $query = Webinar::query()->with('host')->withCount('registrations')->latest('starts_at');
 
         if ($request->boolean('upcoming')) {
             $query->where('starts_at', '>=', now());
@@ -46,6 +47,8 @@ class WebinarController extends Controller
             'host_id' => $request->user()->getAuthIdentifier(),
             'status' => 'scheduled',
         ]));
+
+        Analytics::track('webinar_created', ['webinar_id' => $webinar->id, 'host_id' => $webinar->host_id]);
 
         return response()->json($webinar, 201);
     }
@@ -103,6 +106,8 @@ class WebinarController extends Controller
             'ticket_id' => $validated['ticket_id'] ?? null,
         ]);
 
+        Analytics::track('webinar_registered', ['webinar_id' => $webinar->id, 'user_id' => $request->user()->getAuthIdentifier()]);
+
         return response()->json($registration, 201);
     }
 
@@ -113,6 +118,9 @@ class WebinarController extends Controller
             'is_live' => !$webinar->is_live,
             'status' => $webinar->is_live ? 'ended' : 'live',
         ]);
+
+        $event = $webinar->is_live ? 'webinar_ended' : 'webinar_started';
+        Analytics::track($event, ['webinar_id' => $webinar->id, 'host_id' => $webinar->host_id]);
 
         return response()->json($webinar);
     }

@@ -9,6 +9,7 @@ use Illuminate\Routing\Controller;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\Interview;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\InterviewScore;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\InterviewSlot;
+use Jobi\WebinarNetworkingInterviewPodcast\Support\Analytics\Analytics;
 
 class InterviewController extends Controller
 {
@@ -16,7 +17,7 @@ class InterviewController extends Controller
 
     public function index(): JsonResponse
     {
-        return response()->json(Interview::query()->with(['slots', 'scores'])->paginate());
+        return response()->json(Interview::query()->with(['slots', 'scores', 'host'])->paginate());
     }
 
     public function store(Request $request): JsonResponse
@@ -37,13 +38,15 @@ class InterviewController extends Controller
             'host_id' => $request->user()->getAuthIdentifier(),
         ]));
 
+        Analytics::track('interview_scheduled', ['interview_id' => $interview->id, 'host_id' => $interview->host_id]);
+
         return response()->json($interview, 201);
     }
 
     public function show(Interview $interview): JsonResponse
     {
         $this->authorize('view', $interview);
-        return response()->json($interview->load(['slots', 'scores']));
+        return response()->json($interview->load(['slots', 'scores', 'host']));
     }
 
     public function update(Request $request, Interview $interview): JsonResponse
@@ -80,6 +83,11 @@ class InterviewController extends Controller
 
         $slot = $interview->slots()->create($validated);
 
+        Analytics::track('interview_joined', [
+            'interview_id' => $interview->id,
+            'interview_slot_id' => $slot->id,
+        ]);
+
         return response()->json($slot, 201);
     }
 
@@ -100,6 +108,12 @@ class InterviewController extends Controller
             'criteria' => $validated['criteria'],
             'scores' => $validated['scores'],
             'comments' => $validated['comments'] ?? null,
+        ]);
+
+        Analytics::track('interview_scored', [
+            'interview_id' => $interview->id,
+            'interview_slot_id' => $interviewSlot->id,
+            'interviewer_id' => $request->user()->getAuthIdentifier(),
         ]);
 
         return response()->json($score, 201);

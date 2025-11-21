@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\PodcastEpisode;
 use Jobi\WebinarNetworkingInterviewPodcast\Models\PodcastSeries;
+use Jobi\WebinarNetworkingInterviewPodcast\Support\Analytics\Analytics;
 
 class PodcastController extends Controller
 {
@@ -15,7 +16,7 @@ class PodcastController extends Controller
 
     public function index(): JsonResponse
     {
-        $series = PodcastSeries::query()->with('episodes')->paginate();
+        $series = PodcastSeries::query()->with(['episodes', 'recordings'])->paginate();
         return response()->json($series);
     }
 
@@ -34,6 +35,8 @@ class PodcastController extends Controller
         $series = PodcastSeries::create(array_merge($validated, [
             'host_id' => $request->user()->getAuthIdentifier(),
         ]));
+
+        Analytics::track('podcast_series_created', ['series_id' => $series->id, 'host_id' => $series->host_id]);
 
         return response()->json($series, 201);
     }
@@ -78,6 +81,11 @@ class PodcastController extends Controller
 
         $episode = $podcastSeries->episodes()->create($validated);
 
+        Analytics::track('podcast_episode_created', [
+            'series_id' => $podcastSeries->id,
+            'episode_id' => $episode->id,
+        ]);
+
         return response()->json($episode, 201);
     }
 
@@ -85,6 +93,11 @@ class PodcastController extends Controller
     {
         $this->authorize('update', $podcastSeries);
         $episode->update(['published_at' => now(), 'is_public' => true]);
+
+        Analytics::track('podcast_episode_published', [
+            'series_id' => $podcastSeries->id,
+            'episode_id' => $episode->id,
+        ]);
 
         return response()->json($episode);
     }

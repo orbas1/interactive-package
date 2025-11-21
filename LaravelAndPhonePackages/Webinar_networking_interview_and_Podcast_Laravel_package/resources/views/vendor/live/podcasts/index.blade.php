@@ -1,60 +1,46 @@
 @extends('layouts.app')
 
-@section('title', 'Podcasts')
-
-@section('breadcrumbs')
-<nav aria-label="breadcrumb">
-    <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="/">Home</a></li>
-        <li class="breadcrumb-item active" aria-current="page">Podcasts</li>
-    </ol>
-</nav>
-@endsection
-
 @section('content')
-<div class="container py-4" id="podcast-catalogue">
+<div class="container py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <div>
-            <h1>Podcast Catalogue</h1>
-            <p class="text-muted mb-0">Listen to live & on-demand podcasts</p>
+            <h1 class="mb-1">Podcasts</h1>
+            <p class="text-muted mb-0">Browse series and latest episodes.</p>
         </div>
-        <div class="d-flex gap-2">
-            <input class="form-control" placeholder="Search" name="search" />
-            <select class="form-select" name="category">
-                <option value="">All</option>
-                <option>Business</option>
-                <option>Tech</option>
-            </select>
-            <select class="form-select" name="host">
-                <option value="">Any host</option>
-                <option>Featured</option>
-            </select>
-        </div>
+        <a class="btn btn-primary" href="{{ route('wnip.podcasts.index', ['create' => 1]) }}">Create Series</a>
     </div>
 
-    @php
-        $series = $series ?? [
-            ['title' => 'Product Stories', 'tagline' => 'Behind the roadmap', 'host' => 'Kim', 'href' => '#'],
-            ['title' => 'Growth Weekly', 'tagline' => 'Scaling experiments', 'host' => 'Lee', 'href' => '#'],
-        ];
-    @endphp
+    <form method="get" class="card p-3 shadow-sm mb-3">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-6">
+                <label class="form-label">Search</label>
+                <input type="text" name="q" class="form-control" value="{{ $filters['q'] ?? '' }}" placeholder="Series title">
+            </div>
+            <div class="col-md-2 text-end">
+                <button class="btn btn-outline-secondary" type="submit">Filter</button>
+            </div>
+        </div>
+    </form>
 
     <div class="row g-3">
-        @foreach($series as $podcast)
+        @forelse($series as $item)
             <div class="col-md-4">
-                <div class="card h-100">
+                <div class="card h-100 shadow-sm">
                     <div class="card-body d-flex flex-column">
-                        <div class="ratio ratio-16x9 bg-light rounded mb-3"></div>
-                        <h5 class="card-title">{{ $podcast['title'] }}</h5>
-                        <p class="text-muted">{{ $podcast['tagline'] }}</p>
-                        <div class="mt-auto d-flex justify-content-between align-items-center">
-                            <span class="badge bg-light text-dark">Host: {{ $podcast['host'] }}</span>
-                            <a href="{{ route('wnip.podcasts.series', ['series' => $loop->index + 1]) ?? '#' }}" class="btn btn-outline-primary btn-sm">Start Listening</a>
-                        </div>
+                        <h5 class="card-title">{{ $item->title }}</h5>
+                        <p class="text-muted flex-grow-1">{{ \Illuminate\Support\Str::limit($item->description, 100) }}</p>
+                        <div class="small text-muted mb-2">Episodes: {{ $item->episodes->count() }}</div>
+                        <a class="btn btn-outline-primary w-100" href="{{ route('wnip.podcasts.series', $item) }}">Open Series</a>
                     </div>
                 </div>
             </div>
-        @endforeach
+        @empty
+            <div class="col-12">
+                <div class="alert alert-info">No podcast series found.</div>
+            </div>
+        @endforelse
     </div>
+
+    <div class="mt-3">{{ $series->links() }}</div>
 </div>
 @endsection
